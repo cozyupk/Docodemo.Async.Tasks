@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\DefaultDoor\0200_DefaultRunner.csproj" />
+	  <ProjectReference Include="..\DefaultRunner\0200_DefaultRunner.csproj" />
 	</ItemGroup>
 
 </Project>
