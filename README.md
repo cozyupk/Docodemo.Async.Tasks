@@ -63,7 +63,7 @@ funcTasks.ToAsyncHandler(
             Console.Error.WriteLine(ex);
     }
 ).LetThemGo();
-
+```
 ---
 
 ## 💡 Motivation
