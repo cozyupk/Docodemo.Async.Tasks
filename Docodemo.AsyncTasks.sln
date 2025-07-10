@@ -15,7 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "0600_UsageExampleForAsyncRu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "0200_DefaultRunner", "src\Docodemo.Async.Tasks\DefaultRunner\0200_DefaultRunner.csproj", "{72C1695C-4460-2947-07C8-2935AD611739}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目", "ソリューション項目", "{2022CB0F-8BAF-F49E-0C48-8EF4C96EC109}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{2022CB0F-8BAF-F49E-0C48-8EF4C96EC109}"
 	ProjectSection(SolutionItems) = preProject
 		README.ja.md = README.ja.md
 		README.md = README.md

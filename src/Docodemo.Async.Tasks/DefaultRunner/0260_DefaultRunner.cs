@@ -22,12 +22,15 @@ namespace Docodemo.Async.Tasks.DefaultRunner
                 ?? throw new ArgumentNullException(nameof(asyncTasks));
 
             // Treat the case of blocking mode
-            SemaphoreSlim? semaphoreForEachTask = null;
+            using NullableDisposableWriteOnceField<SemaphoreSlim> semaphoreForEachTask = new();
             if (isBlockingMode)
             {
                 // If blocking mode is enabled, we need to create a semaphore
                 // to block the current thread until all tasks are completed.
-                semaphoreForEachTask= new SemaphoreSlim(0, numTasks);
+                semaphoreForEachTask.Set(new SemaphoreSlim(0, numTasks));
+            } else
+            {
+                semaphoreForEachTask.Set(null);
             }
 
             // Prepare to run tasks synchronously
@@ -40,24 +43,24 @@ namespace Docodemo.Async.Tasks.DefaultRunner
                 try
                 {
                     // Let the tasks go and collect its result or exception
-                    ScheduleAndTrackAsyncTask(task, semaphoreForEachTask, context);
+                    ScheduleAndTrackAsyncTask(task, semaphoreForEachTask.Value, context);
                 }
                 catch (Exception ex)
                 {
                     // If an exception occurs while creating the task, we enqueue it
                     // Note: This is a defensive check, as ScheduleAndTrackAsyncTask should handle all exceptions.
                     exceptions.Enqueue(new AggregateException(ex));
-                    semaphoreForEachTask?.Release();
+                    semaphoreForEachTask.Value?.Release();
                 }
             }
 
             // If blocking is enabled, we need to wait for all tasks to complete
-            if (semaphoreForEachTask != null)
+            if (semaphoreForEachTask != null && semaphoreForEachTask.Value != null)
             {
                 // Wait for all async state machines to complete and release the semaphore
                 for (int i = 0; i < numTasks; i++)
                 {
-                    WaitSemaphore(semaphoreForEachTask, context.CancellationToken);
+                    WaitSemaphore(semaphoreForEachTask.Value, context.CancellationToken);
                 }
             }
 
@@ -70,19 +73,31 @@ namespace Docodemo.Async.Tasks.DefaultRunner
                 : null; // If no exceptions, set to null for clarity
 
             // Finally, we need to call and wait for the OnAllTasksProcessedAsync method, if it is defined.
-            var semaphoreForFinalization = context.OnAllTasksProcessedAsync;
-            if (semaphoreForFinalization != null)
+            // In Non-blocking mode, we can just call it synchronously, but in blocking mode,
+            var onAllTasksProcessedAsync = context.OnAllTasksProcessedAsync;
+            if (onAllTasksProcessedAsync != null)
             {
                 // Using a semaphore to emulate await-style continuation and ensure the current thread waits
                 // for the async callback to finish, without relying on GetAwaiter().GetResult().
-                var semaphoreForAllTasksProcessedAsync = new SemaphoreSlim(0, 1);
-                Task.CompletedTask.ContinueWith(async t =>
+                using NullableDisposableWriteOnceField<SemaphoreSlim> semaphoreForRFinalization = new();
+                if (isBlockingMode)
+                {
+                    // If blocking mode is enabled, we need to create a semaphore
+                    // to block the current thread until the OnAllTasksProcessedAsync method completes.
+                    semaphoreForRFinalization.Set(new SemaphoreSlim(0, 1));
+                }
+                else
+                {
+                    // In non-blocking mode, we can just use a null semaphore
+                    semaphoreForRFinalization.Set(null);
+                }
+                Task.CompletedTask.ContinueWith(t =>
                 {
                     try
                     {
                         // Call the OnAllTasksProcessedAsync method to process the results and exceptions
-                        await semaphoreForFinalization(resultsSnapshot, exceptionsSnapshot, context.CancellationToken)
-                            .ContinueWith(_ => semaphoreForAllTasksProcessedAsync.Release(), context.CancellationToken);
+                        onAllTasksProcessedAsync(resultsSnapshot, exceptionsSnapshot, context.CancellationToken)
+                            .ContinueWith(_ => semaphoreForRFinalization?.Value?.Release(), context.CancellationToken);
                     }
                     catch (Exception ex)
                     {
@@ -92,13 +107,8 @@ namespace Docodemo.Async.Tasks.DefaultRunner
                             ex
                         );
                     }
-                    finally
-                    {
-                        // Release the semaphore to signal that all tasks have been processed.
-                        semaphoreForAllTasksProcessedAsync.Release();
-                    }
                 }, context.CancellationToken, context.TaskContinuationOptions, context.TaskScheduler);
-                semaphoreForAllTasksProcessedAsync.WaitAsync(context.CancellationToken).GetAwaiter().GetResult();
+                semaphoreForRFinalization?.Value?.Wait(context.CancellationToken);
             }
 
             // Return results and any exceptions that occurred
@@ -190,7 +200,7 @@ namespace Docodemo.Async.Tasks.DefaultRunner
                                                 context.Exceptions,
                                                 new AggregateException(
                                                     // TODO: Adjust message based on the ContextBuilder
-                                                    "Exception thrown while processing postProcessTask", 
+                                                    "An exception was thrown while post-processing a task result.", 
                                                     ex
                                                 )
                                             );
