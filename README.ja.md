@@ -36,8 +36,31 @@
 ## 🚀 使用例
 
 ```csharp
-// Coming soon...
+using Docodemo.Async.Tasks.Extentions; // 注意: Visual Studio が自動で追加しないので、手動で追加してください。
 
+Func<Task<int>>[] funcTasks = new[]
+{
+    () => DoSomethingAsync(1),
+    () => DoSomethingAsync(2),
+};
+
+// タスクが完了するまでブロックして待つ
+funcTasks.ToAsyncHandler(
+    exceptions =>
+    {
+        foreach (var ex in exceptions)
+            Console.Error.WriteLine(ex);
+    }
+).ShallWeGo();
+
+// タスクが完了するのを待たず、非ブロッキングで実行する
+funcTasks.ToAsyncHandler(
+    exceptions =>
+    {
+        foreach (var ex in exceptions)
+            Console.Error.WriteLine(ex);
+    }
+).LetThemGo();
 ```
 
 ## 💡モチベーション

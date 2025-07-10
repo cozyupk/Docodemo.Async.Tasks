@@ -1,4 +1,8 @@
-﻿👉 [日本語版はこちら (README.ja.md)](./README.ja.md)
+﻿from pathlib import Path
+
+# Define the markdown content
+readme_content = """
+👉 [日本語版はこちら (README.ja.md)](./README.ja.md)
 
 > ⚠️ Warning! This project is currently under development and its architecture may change significantly.  
 > Use at your own risk (or refrain from using it until it stabilizes).
@@ -7,37 +11,62 @@
 
 ## ✨ Overview
 
-This library provides a **fluent API** to compose, execute, and collect results from `Task`-based methods.  
-Its intended functionality is similar to [AsyncBridge](https://tejacques.github.io/AsyncBridge/), though it's still in early development.
+**Docodemo.Async.Tasks** provides a fluent, composable API for working with `Task`-based asynchronous methods — regardless of whether your own code is `async` or not.
+
+Its purpose is similar to [AsyncBridge](https://tejacques.github.io/AsyncBridge/), but with a modernized, fluent design and a strong emphasis on developer ergonomics.
 
 ---
 
 ## 📦 Features
 
-- Compose collections of `Task` (including `Task<T>`) and define completion callbacks.
-  - Supports `CancellationToken` for cancellation control.
+- Safely **invoke `async` methods from non-`async` methods** — without risking deadlocks or blocking the UI thread.
+- Compose collections of `Task` / `Task<T>` and define post-completion callbacks.
+  - Supports `CancellationToken` for graceful cancellation.
+- Optionally **block** until all tasks complete, or run in **non-blocking** mode.
+- Handle results:
+  - Via final callback (sync or async),
+  - Or retrieve them programmatically.
+- Aggregate exceptions across all tasks for easier error handling.
+- Synchronization context isolation by default — your continuations won't accidentally post back to `SynchronizationContext.Current`.
 
-- Task groups can be executed within a synchronization context.
-  - You can choose between blocking or non-blocking execution.
+### 🧪 Planned Features (WIP)
 
-- Results are returned either via callbacks or directly.
-  - Exceptions are aggregated and provided as part of the result.
-  - Callbacks can be synchronous or asynchronous methods.
-
-- Planned extensions (including ambitious ideas):
-  - Task timeout configuration
-  - Control over worker thread usage and limits (currently executes on the calling thread)
-  - Explicit control of the synchronization context used for continuations (currently isolated from `SynchronizationContext.Current`)
-  - Verbose/debugging mode (e.g., logging or task tracing)
-  - And perhaps... deadlock detection? 😄
+- Timeout support for individual or grouped tasks
+- Worker thread usage control (e.g., parallelism limits)
+- Fine-grained continuation context selection
+- Debug/trace mode for inspection of async task flow
+- (Maybe...) deadlock detection 😄
 
 ---
 
 ## 🚀 Usage Example
 
 ```csharp
-// Coming soon...
-```
+using Docodemo.Async.Tasks.Extentions; // NOTICE: Visual Studio won't add this automatically
+
+Func<Task<int>>[] funcTasks = new[]
+{
+    () => DoSomethingAsync(1),
+    () => DoSomethingAsync(2),
+};
+
+// Call from non-async method in blocking way
+funcTasks.ToAsyncHandler(
+    exceptions =>
+    {
+        foreach (var ex in exceptions)
+            Console.Error.WriteLine(ex);
+    }
+).ShallWeGo();
+
+// Call from async method in non-blocking way
+funcTasks.ToAsyncHandler(
+    exceptions =>
+    {
+        foreach (var ex in exceptions)
+            Console.Error.WriteLine(ex);
+    }
+).LetThemGo();
 
 ---
 

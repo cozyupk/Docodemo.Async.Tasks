@@ -26,7 +26,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\DefaultRunner\0200_DefaultRunner.csproj" />
+	  <ProjectReference Include="..\Extensions\0300_Extensions.csproj" />
 	</ItemGroup>
 
 </Project>
