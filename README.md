@@ -1,8 +1,4 @@
-﻿from pathlib import Path
-
-# Define the markdown content
-readme_content = """
-👉 [日本語版はこちら (README.ja.md)](./README.ja.md)
+﻿👉 [日本語版はこちら (README.ja.md)](./README.ja.md)
 
 > ⚠️ Warning! This project is currently under development and its architecture may change significantly.  
 > Use at your own risk (or refrain from using it until it stabilizes).
